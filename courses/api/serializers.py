@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from courses.models import User
+from courses.models import User, Category, Course, Lesson, Enroll, Cart, CartContent, Payment, Review, ReviewLike, Favourite
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -20,3 +20,99 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
         return user
     
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = '__all__'
+    
+
+
+class CourseSerializer(serializers.ModelSerializer):
+    teacher = serializers.StringRelatedField(read_only=True)
+    category = CategorySerializer(many=True, read_only=True)
+    class Meta:
+        model = Course
+        fields = '__all__'
+
+
+    
+
+class LessonSerializer(serializers.ModelSerializer):
+    course = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Lesson
+        fields = '__all__'
+
+
+
+class EnrollSerializer(serializers.Serializer):
+    student = serializers.StringRelatedField(read_only=True)
+    course = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Enroll
+        fields = '__all__'
+
+
+
+class CartContentSerializer(serializers.ModelSerializer):
+    cart = serializers.StringRelatedField(read_only=True)
+    course = serializers.StringRelatedField(read_only=True)
+    class Meta:
+        model = CartContent
+        fields = '__all__'
+
+
+
+class CartSerializer(serializers.ModelSerializer):
+    student = serializers.StringRelatedField(read_only=True)
+    class Meta:
+        model = Cart
+        fields = '__all__'
+
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+    courses = serializers.StringRelatedField(read_only=True)
+    amount = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Payment
+        fields = '__all__'
+
+
+    # def get_amount(self):
+    #     pass
+
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    student = serializers.StringRelatedField(read_only=True)
+    course = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Review
+        fields = '__all__'
+
+
+
+class LikeSerializer(serializers.ModelSerializer):
+    student = serializers.StringRelatedField(read_only=True)
+    review = ReviewSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = ReviewLike
+        fields = '__all__'
+
+
+class FavouriteSerializer(serializers.ModelSerializer):
+    student = serializers.StringRelatedField(read_only=True)
+    course = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Favourite
+        fields = '__all__'
+
