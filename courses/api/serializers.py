@@ -21,23 +21,35 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
     
 
+class UserSerializer(serializers.ModelSerializer):
 
-class CategorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = Category
-        fields = '__all__'
+        model = User
+        fields = ['id', 'username', 'email', 'is_teacher']
     
 
 
 class CourseSerializer(serializers.ModelSerializer):
     teacher = serializers.StringRelatedField(read_only=True)
-    category = CategorySerializer(many=True, read_only=True)
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        many=True,
+    )
+    
     class Meta:
         model = Course
         fields = '__all__'
 
 
     
+class CategorySerializer(serializers.ModelSerializer):
+    course = CourseSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Category
+        fields = ['id', 'name', 'course']
+
+
 
 class LessonSerializer(serializers.ModelSerializer):
     course = serializers.StringRelatedField(read_only=True)

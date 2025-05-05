@@ -157,7 +157,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',  #JWT için rest_framwork ayarı. Auth classlarını buraya yazıyoruz.
+        'rest_framework_simplejwt.authentication.JWTAuthentication',   #JWT için rest_framwork ayarı. Auth classlarını buraya yazıyoruz.
+        'rest_framework.authentication.SessionAuthentication',  # Tarayıcıdan giriş için gerekli
+        'rest_framework.authentication.BasicAuthentication',  
     ),
 }
 

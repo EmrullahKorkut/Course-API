@@ -1,9 +1,27 @@
-from rest_framework import generics
+from rest_framework import generics, viewsets, mixins, permissions
+from rest_framework.views import APIView
 
-from courses.api.serializers import RegisterSerializer, CategorySerializer, CourseSerializer, LessonSerializer, EnrollSerializer, CartSerializer, CartContentSerializer, PaymentSerializer, ReviewSerializer, LikeSerializer, FavouriteSerializer
+from django.shortcuts import get_object_or_404
+
+from courses.api.permissions import IsAdminOrReadOnly, IsAdminOrTeacherOrReadOnly
+
+
+from courses.api.serializers import (
+    RegisterSerializer, 
+    CategorySerializer, 
+    CourseSerializer, 
+    LessonSerializer, 
+    EnrollSerializer, 
+    CartSerializer, 
+    CartContentSerializer, 
+    PaymentSerializer, 
+    ReviewSerializer, 
+    LikeSerializer, 
+    FavouriteSerializer,
+    UserSerializer
+    )
 from courses.models import User, Category, Course, Lesson, Enroll, Cart, CartContent, Payment, Review, ReviewLike, Favourite
 
-from rest_framework.permissions import IsAdminUser
 
 
 # from rest_framework.viewsets import GenericViewSet
@@ -13,38 +31,67 @@ from rest_framework.permissions import IsAdminUser
 class RegisterView(generics.CreateAPIView):  #yazdığımız user modeline kayıt işlemi
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
-    permission_classes = []  
+    permission_classes = [permissions.AllowAny]  
 
 #---------------------------------------------------deneme için listeleme views, Viewsetlere geçilecek routerlar ayarlanacak---------------------------
-
-class UserListView(generics.ListAPIView):
+#--------------------------------------------------------------------------------------------
+class UserListView(mixins.ListModelMixin, generics.GenericAPIView):
     queryset = User.objects.all()
-    serializer_class = RegisterSerializer
-    permission_classes = [IsAdminUser]
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
+    def get(self, request, *args, **kwargs):                                #USER LİSTELEMESİ VE DETAYLARI
+        return self.list(request, *args, **kwargs)                                          
+    
+class UserDetailView(mixins.RetrieveModelMixin, generics.GenericAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
+    def get(self, request, *args, **kwargs):
+        return self.retrieve(request, *args, **kwargs)
+#-----------------------------------------------------------------------------------------------
 
-class CategoryListView(generics.ListAPIView):
-    queryset = Category.objects.all()
+class CategoryViewset(viewsets.ModelViewSet):
+    queryset = Category.objects.all()                                   #CATEGORY VİEW. NOT SAFE METODLAR SADECE ADMİN İÇİNDİR. LİST RETRİEVE AUTH USERS İÇİN
     serializer_class = CategorySerializer
-    permission_classes = []
+    permission_classes = [IsAdminOrReadOnly]
 
 
+#------------------------------------------------------------------------------------------------
 
-class CourseListView(generics.ListAPIView):
-    queryset = Course.objects.all()
+class CourseViewset(viewsets.ModelViewSet):
+    queryset = Course.objects.all()                                     #ADMİN TEACHER EDİTLER KALANLAR SADECE LİST EDER
     serializer_class = CourseSerializer
-    permission_classes = []
+    permission_classes = [IsAdminOrTeacherOrReadOnly]
 
+    def perform_create(self, serializer):
+        serializer.save(teacher=self.request.user)
 
+#------------------------------------------------------------------------------------------------
 
 class LessonListView(generics.ListAPIView):
-    queryset = Lesson.objects.all()
     serializer_class = LessonSerializer
     permission_classes = []
 
+    def get_queryset(self):
+        # Course id'sine göre filtrele
+        course_id = self.kwargs['pk']
+        course = get_object_or_404(Course, pk=course_id)
+        return Lesson.objects.filter(course=course)
+    
+class LessonDetailView(generics.RetrieveAPIView):
+    serializer_class = LessonSerializer
+
+    def get_object(self):   
+        course_id = self.kwargs['pk']   
+        lesson_id = self.kwargs['lesson_id']
+        course = get_object_or_404(Course, pk=course_id)
+        lesson = get_object_or_404(Lesson, pk=lesson_id, course=course)
+        return lesson
 
 
+#------------------------------------------------------------------------------------------------
 class EnrollListView(generics.ListAPIView):
     queryset = Enroll.objects.all()
     serializer_class = EnrollSerializer

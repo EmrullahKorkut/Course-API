@@ -5,17 +5,32 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from courses.api import views
 
 
+from rest_framework import routers
+
+router = routers.SimpleRouter()
+router.register(r'categories', views.CategoryViewset)
+router.register(r'courses', views.CourseViewset)
+
+
 #sadece list viewlarla komponentlerin testi-----------------------------------
 
 
 urlpatterns = [
     path('register/', views.RegisterView.as_view(), name='register'), #kayıt
 
-    path('user-list/', views.UserListView.as_view(), name='user-list'),
 
-    path('categories/', views.CategoryListView.as_view(), name='categories'),
-    path('courses/', views.CourseListView.as_view(), name='courses'),
-    path('lessons/', views.LessonListView.as_view(), name='course-lessons'),
+    path('user-list/', views.UserListView.as_view(), name='user-list'),
+    path('user-list/<int:pk>/', views.UserDetailView.as_view(), name='user-detail'),
+
+
+    path('', include(router.urls)), #kategiriler, kurslar için
+    #path('courses/', views.CourseListView.as_view(), name='courses'),
+
+
+    path('courses/<int:pk>/lessons/', views.LessonListView.as_view(), name='course-lessons'),
+    path('courses/<int:pk>/lessons/<int:lesson_id>', views.LessonDetailView.as_view(), name='lesson-detail'),
+
+
     path('enrolls/', views.EnrollListView.as_view(), name='enrolls'),
     path('carts/', views.CartListView.as_view(), name='carts'),
     path('cart-contents/', views.CartContentListView.as_view(), name='cart-contents'),

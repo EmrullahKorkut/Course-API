@@ -5,13 +5,32 @@ from django.contrib.auth.models import AbstractUser
 
 from PIL import Image
 
+
+
 class User(AbstractUser):
     is_teacher = models.BooleanField(default=False)
     is_student = models.BooleanField(default=True)
+    email = models.EmailField(blank=False, null=False, unique=True)
 
+    def which_role(self):
+        if self.is_superuser:
+            return f'ADMIN'
+        if self.is_teacher:
+            return f'Teacher'
+        if self.is_student:
+            return f'Student'
+        
     def __str__(self):
-        return f'{self.username} {self.last_name}'
+        return f'{self.username} {self.last_name} --> {self.which_role()}'
     
+
+
+class Profile(models.Model):
+    pass
+
+
+
+
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
@@ -22,11 +41,12 @@ class Category(models.Model):
 
 
 class Course(models.Model):
+    category = models.ManyToManyField(Category, blank=True, related_name='courses')
+
     title = models.CharField(max_length=200)
     description = models.TextField(max_length=2000)
     price = models.DecimalField(max_digits=8, decimal_places=2)
     teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='courses')
-    category = models.ManyToManyField(Category, related_name='course')
     crated_date = models.DateTimeField(auto_now_add=True)
     images = models.ImageField(null=True, blank=True, upload_to='course-images')
 
@@ -36,7 +56,8 @@ class Course(models.Model):
 
 
 class Lesson(models.Model):
-    course = models.ForeignKey(Course, on_delete=models.SET_NULL, null=True, related_name='lesson')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='lessons')
+
     title = models.CharField(max_length=200)
     images = models.ImageField(null=True, blank=True, upload_to='lesson-images')
     video = models.FileField(null=True, blank=True, upload_to='lesson-videos/')
@@ -49,8 +70,9 @@ class Lesson(models.Model):
 
 
 class Enroll(models.Model):
-    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='enroll_student')
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enroll_course')
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='enroll_students')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enroll_courses')
+
     enroll_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -84,6 +106,7 @@ class CartContent(models.Model):
 class Payment(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='payments')
     course = models.ManyToManyField(CartContent, related_name='courses', blank=False, null=False)
+
     amount = models.DecimalField(max_digits=8, decimal_places=2)
 
 
@@ -95,6 +118,7 @@ class Payment(models.Model):
 class Review(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='review_owner')
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='review_course')
+
     point = models.IntegerField()
     commet_header = models.CharField(max_length=50)
     comment = models.TextField(max_length=200)
