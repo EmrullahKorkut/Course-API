@@ -31,12 +31,27 @@ urlpatterns = [
     path('courses/<int:pk>/lessons/<int:lesson_id>', views.LessonDetailView.as_view(), name='lesson-detail'),
 
 
-    path('enrolls/', views.EnrollListView.as_view(), name='enrolls'),
-    path('carts/', views.CartListView.as_view(), name='carts'),
-    path('cart-contents/', views.CartContentListView.as_view(), name='cart-contents'),
+    # path('courses/<int:pk>/add-course/', views.CartAddView.as_view(), name='add-card'),
+    # path('my-card/', views.CartListView.as_view(), name='user-card-detail'),
+    # path('my-card/<int:course>/', views.CartListView.as_view(), name='user-card-detail'),
+
+    
+    
+    # path('cart-contents/', views..as_view(), name='cart-contents'),
+    
+    
     path('payment/', views.PaymentListView.as_view(), name='payment'),
+
+
+    path('course/<int:pk>/enroll', views.EnrollListView.as_view(), name='enroll'),
+    
+    
     path('review/', views.ReviewListView.as_view(), name='review'),
+    
+    
     path('like/', views.LikeListView.as_view(), name='like'),
+    
+    
     path('favourite/', views.FavouriteListView.as_view(), name='favourite'),
 
     

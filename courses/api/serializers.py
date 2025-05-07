@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from courses.models import User, Category, Course, Lesson, Enroll, Cart, CartContent, Payment, Review, ReviewLike, Favourite
+from courses.models import User, Category, Course, Lesson, Enroll, Cart, Payment, Review, ReviewLike, Favourite
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -60,27 +60,18 @@ class LessonSerializer(serializers.ModelSerializer):
 
 
 
-class EnrollSerializer(serializers.Serializer):
-    student = serializers.StringRelatedField(read_only=True)
-    course = serializers.StringRelatedField(read_only=True)
-
-    class Meta:
-        model = Enroll
-        fields = '__all__'
-
-
-
-class CartContentSerializer(serializers.ModelSerializer):
-    cart = serializers.StringRelatedField(read_only=True)
-    course = serializers.StringRelatedField(read_only=True)
-    class Meta:
-        model = CartContent
-        fields = '__all__'
+# class CartContentSerializer(serializers.ModelSerializer):
+#     cart = serializers.StringRelatedField(read_only=True)
+#     course = serializers.StringRelatedField(read_only=True)
+#     class Meta:
+#         model = CartContent
+#         fields = '__all__'
 
 
 
 class CartSerializer(serializers.ModelSerializer):
     student = serializers.StringRelatedField(read_only=True)
+    courses = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), many=True)
     class Meta:
         model = Cart
         fields = '__all__'
@@ -98,6 +89,17 @@ class PaymentSerializer(serializers.ModelSerializer):
 
     # def get_amount(self):
     #     pass
+
+
+
+
+class EnrollSerializer(serializers.Serializer):
+    student = serializers.StringRelatedField(read_only=True)
+    course = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = Enroll
+        fields = '__all__'
 
 
 

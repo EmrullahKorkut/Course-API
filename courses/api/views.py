@@ -1,7 +1,14 @@
-from rest_framework import generics, viewsets, mixins, permissions
+from urllib import response
+from django.forms import ValidationError
+from rest_framework import generics, viewsets, mixins, permissions, status
 from rest_framework.views import APIView
 
+from rest_framework.response import Response
+
+from rest_framework.decorators import action
+
 from django.shortcuts import get_object_or_404
+
 
 from courses.api.permissions import IsAdminOrReadOnly, IsAdminOrTeacherOrReadOnly
 
@@ -13,14 +20,13 @@ from courses.api.serializers import (
     LessonSerializer, 
     EnrollSerializer, 
     CartSerializer, 
-    CartContentSerializer, 
     PaymentSerializer, 
     ReviewSerializer, 
     LikeSerializer, 
     FavouriteSerializer,
     UserSerializer
     )
-from courses.models import User, Category, Course, Lesson, Enroll, Cart, CartContent, Payment, Review, ReviewLike, Favourite
+from courses.models import User, Category, Course, Lesson, Enroll, Cart, Payment, Review, ReviewLike, Favourite
 
 
 
@@ -33,7 +39,7 @@ class RegisterView(generics.CreateAPIView):  #yazdığımız user modeline kayı
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]  
 
-#---------------------------------------------------deneme için listeleme views, Viewsetlere geçilecek routerlar ayarlanacak---------------------------
+#---------------------------------------------------deneme için listeleme views, crud işlemlerine geçilecek routerlar, urller ayarlanacak---------------------------
 #--------------------------------------------------------------------------------------------
 class UserListView(mixins.ListModelMixin, generics.GenericAPIView):
     queryset = User.objects.all()
@@ -75,47 +81,46 @@ class LessonListView(generics.ListAPIView):
     permission_classes = []
 
     def get_queryset(self):
-        # Course id'sine göre filtrele
         course_id = self.kwargs['pk']
         course = get_object_or_404(Course, pk=course_id)
         return Lesson.objects.filter(course=course)
     
-class LessonDetailView(generics.RetrieveAPIView):
+class LessonDetailView(generics.RetrieveAPIView):                           #
     serializer_class = LessonSerializer
 
     def get_object(self):   
-        course_id = self.kwargs['pk']   
+        course_id = self.kwargs['pk']
         lesson_id = self.kwargs['lesson_id']
         course = get_object_or_404(Course, pk=course_id)
         lesson = get_object_or_404(Lesson, pk=lesson_id, course=course)
         return lesson
 
 
-#------------------------------------------------------------------------------------------------
-class EnrollListView(generics.ListAPIView):
-    queryset = Enroll.objects.all()
-    serializer_class = EnrollSerializer
-    permission_classes = []
+#-----------------------------------------------------------------------------------------------
 
 
-
-class CartListView(generics.ListAPIView):
-    queryset = Cart.objects.all()
-    serializer_class = CartSerializer
-    permission_classes = []
+class CartAddView():
+    pass
 
 
+#-----------------------------------------------------------------------------------------------
 
-class CartContentListView(generics.ListAPIView):
-    queryset = CartContent.objects.all()
-    serializer_class = CartContentSerializer
-    permission_classes = []
+# class CartContentListView(generics.ListAPIView):
+#     queryset = CartContent.objects.all()
+#     serializer_class = CartContentSerializer
+#     permission_classes = []
 
 
 
 class PaymentListView(generics.ListAPIView):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
+    permission_classes = []
+
+
+class EnrollListView(generics.ListAPIView):
+    queryset = Enroll.objects.all()
+    serializer_class = EnrollSerializer
     permission_classes = []
 
 
