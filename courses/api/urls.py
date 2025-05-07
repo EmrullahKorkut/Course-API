@@ -27,31 +27,32 @@ urlpatterns = [
     #path('courses/', views.CourseListView.as_view(), name='courses'),
 
 
-    path('courses/<int:pk>/lessons/', views.LessonListView.as_view(), name='course-lessons'),
-    path('courses/<int:pk>/lessons/<int:lesson_id>', views.LessonDetailView.as_view(), name='lesson-detail'),
+    path('courses/<int:pk>/lessons/', views.LessonListCreateView.as_view(), name='course-lessons'),
+    path('courses/<int:pk>/lessons/<int:lesson_id>/', views.LessonDetailView.as_view(), name='lesson-detail'),
 
 
-    # path('courses/<int:pk>/add-course/', views.CartAddView.as_view(), name='add-card'),
-    # path('my-card/', views.CartListView.as_view(), name='user-card-detail'),
-    # path('my-card/<int:course>/', views.CartListView.as_view(), name='user-card-detail'),
-
+    path('courses/<int:pk>/card/', views.CartAddDeleteView.as_view(), name='add-card'),
+    path('my-card/<str:student>/', views.CartDetailView.as_view(), name='user-card-detail'),
     
     
     # path('cart-contents/', views..as_view(), name='cart-contents'),
     
     
-    path('payment/', views.PaymentListView.as_view(), name='payment'),
+    # path('payment/', views.PaymentListView.as_view(), name='payment'),
 
 
-    path('course/<int:pk>/enroll', views.EnrollListView.as_view(), name='enroll'),
+    path('course/<int:pk>/enroll/', views.EnrollListView.as_view(), name='enroll'),
     
     
-    path('review/', views.ReviewListView.as_view(), name='review'),
+    path('course/<int:pk>/review/', views.ReviewListView.as_view(), name='review'),
+    path('course/<int:pk>/review/<int:review_id>/', views.ReviewListView.as_view(), name='review-detail'),
+
+    
+    path('review/<int:pk>/like/', views.LikeListView.as_view(), name='like'),
+    path('review/<int:pk>/unlike/', views.LikeListView.as_view(), name='unlike'),
     
     
-    path('like/', views.LikeListView.as_view(), name='like'),
-    
-    
+    path('favourite/', views.FavouriteListView.as_view(), name='favourite'),
     path('favourite/', views.FavouriteListView.as_view(), name='favourite'),
 
     

@@ -41,3 +41,14 @@ class IsAdminOrTeacherOrReadOnly(permissions.BasePermission):
             return True
 
         return False
+
+
+
+class IsStudentOrReadOnly(permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+           return True
+        if request.user.is_student:
+            return True
+        return False

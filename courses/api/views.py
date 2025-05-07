@@ -4,13 +4,14 @@ from rest_framework import generics, viewsets, mixins, permissions, status
 from rest_framework.views import APIView
 
 from rest_framework.response import Response
+from rest_framework.exceptions import NotFound
 
 from rest_framework.decorators import action
 
 from django.shortcuts import get_object_or_404
 
 
-from courses.api.permissions import IsAdminOrReadOnly, IsAdminOrTeacherOrReadOnly
+from courses.api.permissions import IsAdminOrReadOnly, IsAdminOrTeacherOrReadOnly, IsStudentOrReadOnly
 
 
 from courses.api.serializers import (
@@ -76,7 +77,8 @@ class CourseViewset(viewsets.ModelViewSet):
 
 #------------------------------------------------------------------------------------------------
 
-class LessonListView(generics.ListAPIView):
+
+class LessonListCreateView(generics.ListCreateAPIView):
     serializer_class = LessonSerializer
     permission_classes = []
 
@@ -85,6 +87,7 @@ class LessonListView(generics.ListAPIView):
         course = get_object_or_404(Course, pk=course_id)
         return Lesson.objects.filter(course=course)
     
+
 class LessonDetailView(generics.RetrieveAPIView):                           #
     serializer_class = LessonSerializer
 
@@ -98,10 +101,53 @@ class LessonDetailView(generics.RetrieveAPIView):                           #
 
 #-----------------------------------------------------------------------------------------------
 
+class CartAddDeleteView(APIView):
+    permission_classes = [IsStudentOrReadOnly]
 
-class CartAddView():
-    pass
+    def post(self, request, pk):
+        user = request.user
+        cart = Cart.objects.get(student=user)
+        course = get_object_or_404(Course, pk=pk)
 
+        if course in cart.courses.all():
+            return Response(
+                {"message": "You cant add the same course!!.."}, 
+                status=status.HTTP_200_OK)
+        
+        cart.courses.add(course)
+
+        return Response({
+            "message": f"The course '{course.title}' added to cart!! Pay the money and use the courses"
+        }, 
+        status=status.HTTP_200_OK)
+    
+    def delete(self, request, pk):
+        user = request.user
+        cart = get_object_or_404(Cart, student=user)
+        course = get_object_or_404(Course, pk=pk)
+
+        if course not in cart.courses.all():
+            return Response(
+                {"message": "Course not in your cart you can add the course"}, 
+                status=status.HTTP_404_NOT_FOUND)
+
+        cart.courses.remove(course)
+        return Response({"message": f"'{course.title} removed from cart!!"}, status=status.HTTP_200_OK)
+
+
+class CartDetailView(generics.RetrieveAPIView):
+    serializer_class = CartSerializer
+    lookup_field = 'student__username'
+    permission_classes = [IsStudentOrReadOnly]
+
+    def get_object(self):
+        username = self.kwargs.get('student')
+        try:
+            cart = Cart.objects.get(student__username=username)
+        except Cart.DoesNotExist:
+            raise NotFound('There is no a cart for you.please add a course to the card')
+
+        return cart
 
 #-----------------------------------------------------------------------------------------------
 
@@ -110,13 +156,14 @@ class CartAddView():
 #     serializer_class = CartContentSerializer
 #     permission_classes = []
 
+#-----------------------------------------------------------------------------------------------
 
-
-class PaymentListView(generics.ListAPIView):
+class PaymentView(generics.ListAPIView):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
     permission_classes = []
 
+#-----------------------------------------------------------------------------------------------
 
 class EnrollListView(generics.ListAPIView):
     queryset = Enroll.objects.all()
@@ -124,22 +171,25 @@ class EnrollListView(generics.ListAPIView):
     permission_classes = []
 
 
+#-----------------------------------------------------------------------------------------------
 
 class ReviewListView(generics.ListAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
     permission_classes = []
 
-
+#-----------------------------------------------------------------------------------------------
 
 class LikeListView(generics.ListAPIView):
     queryset = ReviewLike.objects.all()
     serializer_class = LikeSerializer
     permission_classes = []
 
-
+#-----------------------------------------------------------------------------------------------
 
 class FavouriteListView(generics.ListAPIView):
     queryset = Favourite.objects.all()
     serializer_class = FavouriteSerializer
     permission_classes = []
+
+#-----------------------------------------------------------------------------------------------

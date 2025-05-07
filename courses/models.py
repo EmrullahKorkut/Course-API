@@ -97,7 +97,6 @@ class Payment(models.Model):
 
     amount = models.DecimalField(max_digits=8, decimal_places=2)
 
-
     def __str__(self):
         return f"{self.student.username} - for courses in cart {self.amount} TL"
     
