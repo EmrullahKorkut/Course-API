@@ -110,9 +110,7 @@ class CartAddDeleteView(APIView):
         course = get_object_or_404(Course, pk=pk)
 
         if course in cart.courses.all():
-            return Response(
-                {"message": "You cant add the same course!!.."}, 
-                status=status.HTTP_200_OK)
+            return Response({"message": "You cant add the same course!!.."}, status=status.HTTP_200_OK)
         
         cart.courses.add(course)
 
@@ -127,27 +125,25 @@ class CartAddDeleteView(APIView):
         course = get_object_or_404(Course, pk=pk)
 
         if course not in cart.courses.all():
-            return Response(
-                {"message": "Course not in your cart you can add the course"}, 
-                status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": "Course not in your cart you can add the course"}, status=status.HTTP_404_NOT_FOUND)
 
         cart.courses.remove(course)
         return Response({"message": f"'{course.title} removed from cart!!"}, status=status.HTTP_200_OK)
 
 
-class CartDetailView(generics.RetrieveAPIView):
+class CartDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = CartSerializer
-    lookup_field = 'student__username'
     permission_classes = [IsStudentOrReadOnly]
 
     def get_object(self):
-        username = self.kwargs.get('student')
+        username = self.request.user
         try:
-            cart = Cart.objects.get(student__username=username)
+            cart = Cart.objects.get(student=username)
         except Cart.DoesNotExist:
             raise NotFound('There is no a cart for you.please add a course to the card')
 
         return cart
+    
 
 #-----------------------------------------------------------------------------------------------
 
@@ -158,10 +154,23 @@ class CartDetailView(generics.RetrieveAPIView):
 
 #-----------------------------------------------------------------------------------------------
 
-class PaymentView(generics.ListAPIView):
-    queryset = Payment.objects.all()
-    serializer_class = PaymentSerializer
+class PaymentView(APIView):
     permission_classes = []
+
+    def post(self, request):
+        cart = get_object_or_404(Cart, student=request.user)
+
+        if not cart.courses.exists():
+            return Response({"error":"Please add course to your card!!!"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        payment_fee = 0
+        for courses in cart.courses.all():
+            payment_fee += courses.price
+
+        cart.courses.clear()
+
+        return Response({"message":"Payment is successful..!"}, status=status.HTTP_200_OK)
+    
 
 #-----------------------------------------------------------------------------------------------
 

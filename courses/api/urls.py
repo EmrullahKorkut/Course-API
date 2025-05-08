@@ -32,16 +32,16 @@ urlpatterns = [
 
 
     path('courses/<int:pk>/card/', views.CartAddDeleteView.as_view(), name='add-card'),
-    path('my-card/<str:student>/', views.CartDetailView.as_view(), name='user-card-detail'),
+    path('my-card/', views.CartDetailView.as_view(), name='user-card-detail'),
+
+
+    path('my-card/pay', views.PaymentView.as_view(), name='payment'),
     
     
     # path('cart-contents/', views..as_view(), name='cart-contents'),
-    
-    
-    # path('payment/', views.PaymentListView.as_view(), name='payment'),
 
 
-    path('course/<int:pk>/enroll/', views.EnrollListView.as_view(), name='enroll'),
+    path('enrolls/', views.EnrollListView.as_view(), name='enroll'),
     
     
     path('course/<int:pk>/review/', views.ReviewListView.as_view(), name='review'),
