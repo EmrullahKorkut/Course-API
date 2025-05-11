@@ -2,6 +2,7 @@ from django.db import models
 
 # Create your models here.
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 from PIL import Image
 
@@ -26,10 +27,17 @@ class User(AbstractUser):
 
 
 class Profile(models.Model):
-    pass
+    role = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='role')
+    gender = models.CharField(max_length=20)
+    age = models.PositiveIntegerField()
+    bio = models.TextField(max_length=200)
 
 
-
+    # def validate_age(self):
+    #     max_Age = 100
+    #     min_age = 18
+    #     if self.age < min_age or self.age > max_Age:
+    #         return ValueError()
 
 
 class Category(models.Model):
@@ -104,12 +112,12 @@ class Payment(models.Model):
 
 class Enroll(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='enroll_students')
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enroll_courses')
+    courses = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enroll_courses')
 
     enroll_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('student', 'course')
+        unique_together = ('student', 'courses')
 
     def __str__(self):
         return f'{self.student.username} - {self.course.title}'
@@ -122,7 +130,7 @@ class Review(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='review_course')
 
     point = models.IntegerField()
-    commet_header = models.CharField(max_length=50)
+    comment_header = models.CharField(max_length=50)
     comment = models.TextField(max_length=200)
     review_time = models.DateTimeField(auto_now_add=True)
 
@@ -139,13 +147,16 @@ class ReviewLike(models.Model):
         unique_together = ['review', 'student']
 
     def __str__(self):
-        return f'{self.student.username} liked this review ({self.review.commet_header})'
+        return f'{self.student.username} liked this review ({self.review.comment_header})'
 
 
 
 class Favourite(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='fav_user')
-    course = models.ManyToManyField(Course, related_name='fav_course')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='fav_course')
+
+    class Meta:
+        unique_together = ['course', 'student']
 
     def __str__(self):
         return f'{self.student.username} add ({self.course.title}) favorite'

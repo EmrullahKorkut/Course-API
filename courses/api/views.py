@@ -157,6 +157,17 @@ class CartDetailView(generics.RetrieveDestroyAPIView):
 class PaymentView(APIView):
     permission_classes = []
 
+    def get(self, request):
+        cart = get_object_or_404(Cart, student=request.user)
+        if not cart.courses.exists():
+            return Response({"error":"Please add course to your card!!!"}, status=status.HTTP_400_BAD_REQUEST)
+
+        course_list = cart.courses.all()
+        courses = CourseSerializer(course_list, many=True)
+
+        return Response({"message": "Courses ready for payment", "courses": courses.data})
+
+
     def post(self, request):
         cart = get_object_or_404(Cart, student=request.user)
 
@@ -166,10 +177,16 @@ class PaymentView(APIView):
         payment_fee = 0
         for courses in cart.courses.all():
             payment_fee += courses.price
+        
+        Payment.amount = payment_fee
+       
+        enrolls = []
 
-        cart.courses.clear()
-
-        return Response({"message":"Payment is successful..!"}, status=status.HTTP_200_OK)
+        for course in cart.courses.all():
+            enroll_course = Enroll.objects.create(student=request.user, courses=course)
+            enrolls.append(enroll_course)
+                                  
+        return Response({"message":f"Payment is successful..!{Payment.amount}TL"}, status=status.HTTP_200_OK)
     
 
 #-----------------------------------------------------------------------------------------------
@@ -182,23 +199,79 @@ class EnrollListView(generics.ListAPIView):
 
 #-----------------------------------------------------------------------------------------------
 
-class ReviewListView(generics.ListAPIView):
-    queryset = Review.objects.all()
+class ReviewListCreateView(generics.ListCreateAPIView):
     serializer_class = ReviewSerializer
     permission_classes = []
 
+    def get_queryset(self):
+        course = get_object_or_404(Course, pk=self.kwargs['pk'])
+        reviews = Review.objects.filter(course=course)
+        return reviews
+
+    def perform_create(self, serializer):
+        course = get_object_or_404(Course, pk=self.kwargs['pk'])
+        serializer.save(student=self.request.user, course=course)
+
+
+class ReviewGetDeleteView(generics.RetrieveDestroyAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = []
+    
+
 #-----------------------------------------------------------------------------------------------
 
-class LikeListView(generics.ListAPIView):
-    queryset = ReviewLike.objects.all()
+class LikeListCreateView(generics.ListCreateAPIView):
     serializer_class = LikeSerializer
     permission_classes = []
 
+    def get_queryset(self):
+        review = get_object_or_404(Review, pk=self.kwargs['pk'])
+        like = ReviewLike.objects.filter(review=review, student=self.request.user)
+        return like
+
+    def perform_create(self, serializer):
+        review = get_object_or_404(Review, pk=self.kwargs['pk'])
+        serializer.save(student=self.request.user, review=review)
+
+
+class LikeGetDeleteView(generics.RetrieveDestroyAPIView):
+    serializer_class = LikeSerializer
+    permission_classes = []
+
+    def get_object(self):
+        review = get_object_or_404(Review, pk=self.kwargs['pk'])
+        like = get_object_or_404(ReviewLike, review=review, student=self.request.user)
+        return like
+
 #-----------------------------------------------------------------------------------------------
 
-class FavouriteListView(generics.ListAPIView):
-    queryset = Favourite.objects.all()
+class FavouriteCreateView(generics.CreateAPIView):
     serializer_class = FavouriteSerializer
     permission_classes = []
 
+    def perform_create(self, serializer):
+        course = get_object_or_404(Course, pk=self.kwargs['pk'])
+        serializer.save(student=self.request.user, course=course)
+
+
+
+class FavouriteGetDeleteView(generics.RetrieveDestroyAPIView):
+    serializer_class = FavouriteSerializer
+    permission_classes = []
+
+    def get_object(self):
+        course = get_object_or_404(Course, pk=self.kwargs['pk'])
+        fav = get_object_or_404(Favourite, course=course, student=self.request.user)
+        return fav
+
+
+
+class FavouriteListView(generics.ListAPIView):
+    serializer_class = FavouriteSerializer
+    permission_classes = []
+
+    def get_queryset(self):
+        favs =  Favourite.objects.filter(student=self.request.user)
+        return favs
 #-----------------------------------------------------------------------------------------------

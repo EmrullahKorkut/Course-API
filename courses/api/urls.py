@@ -41,19 +41,21 @@ urlpatterns = [
     # path('cart-contents/', views..as_view(), name='cart-contents'),
 
 
-    path('enrolls/', views.EnrollListView.as_view(), name='enroll'),
+    path('my-courses/', views.EnrollListView.as_view(), name='enroll'),
     
     
-    path('course/<int:pk>/review/', views.ReviewListView.as_view(), name='review'),
-    path('course/<int:pk>/review/<int:review_id>/', views.ReviewListView.as_view(), name='review-detail'),
+    path('courses/<int:pk>/review/', views.ReviewListCreateView.as_view(), name='review'),
+    path('courses/<int:pk>/review/<int:review_id>/', views.ReviewGetDeleteView.as_view(), name='review-detail'),
 
     
-    path('review/<int:pk>/like/', views.LikeListView.as_view(), name='like'),
-    path('review/<int:pk>/unlike/', views.LikeListView.as_view(), name='unlike'),
+    path('review/<int:pk>/like/', views.LikeListCreateView.as_view(), name='like'),
+    path('review/<int:pk>/unlike/', views.LikeGetDeleteView.as_view(), name='unlike'),
     
     
-    path('favourite/', views.FavouriteListView.as_view(), name='favourite'),
-    path('favourite/', views.FavouriteListView.as_view(), name='favourite'),
+    path('courses/<int:pk>/fav/', views.FavouriteCreateView.as_view(), name='favourite'),
+    path('courses/<int:pk>/unfav/', views.FavouriteGetDeleteView.as_view(), name='unfavourite'),
+    path('fav-courses/', views.FavouriteListView.as_view(), name='favourite'),
+
 
     
     

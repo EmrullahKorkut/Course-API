@@ -95,7 +95,7 @@ class PaymentSerializer(serializers.ModelSerializer):
 
 class EnrollSerializer(serializers.Serializer):
     student = serializers.StringRelatedField(read_only=True)
-    course = serializers.StringRelatedField(read_only=True)
+    courses = CourseSerializer(read_only=True)
 
     class Meta:
         model = Enroll
@@ -115,7 +115,7 @@ class ReviewSerializer(serializers.ModelSerializer):
 
 class LikeSerializer(serializers.ModelSerializer):
     student = serializers.StringRelatedField(read_only=True)
-    review = ReviewSerializer(many=True, read_only=True)
+    review = ReviewSerializer(read_only=True)
 
     class Meta:
         model = ReviewLike
@@ -124,7 +124,7 @@ class LikeSerializer(serializers.ModelSerializer):
 
 class FavouriteSerializer(serializers.ModelSerializer):
     student = serializers.StringRelatedField(read_only=True)
-    course = serializers.StringRelatedField(read_only=True)
+    course = CourseSerializer(read_only=True)
 
     class Meta:
         model = Favourite
