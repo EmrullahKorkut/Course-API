@@ -52,3 +52,13 @@ class IsStudentOrReadOnly(permissions.BasePermission):
         if request.user.is_student:
             return True
         return False
+    
+
+
+
+class IsCardOwner(permissions.BasePermission):
+
+    def has_object_permission(self, request, view, obj):
+        if request.user.is_student == obj.student.is_student:
+            return True
+        return False

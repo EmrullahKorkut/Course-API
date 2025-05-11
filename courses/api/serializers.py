@@ -71,7 +71,8 @@ class LessonSerializer(serializers.ModelSerializer):
 
 class CartSerializer(serializers.ModelSerializer):
     student = serializers.StringRelatedField(read_only=True)
-    courses = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all(), many=True)
+    courses = CourseSerializer(many=True, read_only=True)
+
     class Meta:
         model = Cart
         fields = '__all__'

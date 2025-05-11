@@ -11,7 +11,7 @@ from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 
 
-from courses.api.permissions import IsAdminOrReadOnly, IsAdminOrTeacherOrReadOnly, IsStudentOrReadOnly
+from courses.api.permissions import IsAdminOrReadOnly, IsAdminOrTeacherOrReadOnly, IsStudentOrReadOnly, IsCardOwner
 
 
 from courses.api.serializers import (
@@ -27,12 +27,20 @@ from courses.api.serializers import (
     FavouriteSerializer,
     UserSerializer
     )
-from courses.models import User, Category, Course, Lesson, Enroll, Cart, Payment, Review, ReviewLike, Favourite
+from courses.models import (User, 
+    Category, 
+    Course, 
+    Lesson, 
+    Enroll, 
+    Cart, 
+    Payment, 
+    Review, 
+    ReviewLike, 
+    Favourite
+    )
 
 
 
-# from rest_framework.viewsets import GenericViewSet
-# from rest_framework import mixins
 
 
 class RegisterView(generics.CreateAPIView):  #yazdığımız user modeline kayıt işlemi
@@ -80,7 +88,7 @@ class CourseViewset(viewsets.ModelViewSet):
 
 class LessonListCreateView(generics.ListCreateAPIView):
     serializer_class = LessonSerializer
-    permission_classes = []
+    permission_classes = [IsAdminOrTeacherOrReadOnly]
 
     def get_queryset(self):
         course_id = self.kwargs['pk']
@@ -88,30 +96,30 @@ class LessonListCreateView(generics.ListCreateAPIView):
         return Lesson.objects.filter(course=course)
     
 
-class LessonDetailView(generics.RetrieveAPIView):                           #
+class LessonDetailView(generics.RetrieveAPIView):                           
     serializer_class = LessonSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-    def get_object(self):   
-        course_id = self.kwargs['pk']
-        lesson_id = self.kwargs['lesson_id']
-        course = get_object_or_404(Course, pk=course_id)
-        lesson = get_object_or_404(Lesson, pk=lesson_id, course=course)
+    def get_object(self):
+        course = get_object_or_404(Course, pk=self.kwargs['pk'])
+        lesson = get_object_or_404(Lesson, pk=self.kwargs['lesson_id'], course=course)
         return lesson
 
 
 #-----------------------------------------------------------------------------------------------
 
 class CartAddDeleteView(APIView):
-    permission_classes = [IsStudentOrReadOnly]
+    permission_classes = [IsCardOwner]
 
     def post(self, request, pk):
-        user = request.user
-        cart = Cart.objects.get(student=user)
         course = get_object_or_404(Course, pk=pk)
+        # cart, created = Cart.objects.get_or_create(student=request.user)
+
+        cart, created = Cart.objects.get_or_create(student=request.user)
 
         if course in cart.courses.all():
             return Response({"message": "You cant add the same course!!.."}, status=status.HTTP_200_OK)
-        
+
         cart.courses.add(course)
 
         return Response({
@@ -120,8 +128,7 @@ class CartAddDeleteView(APIView):
         status=status.HTTP_200_OK)
     
     def delete(self, request, pk):
-        user = request.user
-        cart = get_object_or_404(Cart, student=user)
+        cart = get_object_or_404(Cart, student=request.user)
         course = get_object_or_404(Course, pk=pk)
 
         if course not in cart.courses.all():
@@ -133,7 +140,7 @@ class CartAddDeleteView(APIView):
 
 class CartDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = CartSerializer
-    permission_classes = [IsStudentOrReadOnly]
+    permission_classes = [IsCardOwner]
 
     def get_object(self):
         username = self.request.user
@@ -147,15 +154,12 @@ class CartDetailView(generics.RetrieveDestroyAPIView):
 
 #-----------------------------------------------------------------------------------------------
 
-# class CartContentListView(generics.ListAPIView):
-#     queryset = CartContent.objects.all()
-#     serializer_class = CartContentSerializer
-#     permission_classes = []
+
 
 #-----------------------------------------------------------------------------------------------
 
 class PaymentView(APIView):
-    permission_classes = []
+    permission_classes = [IsCardOwner]
 
     def get(self, request):
         cart = get_object_or_404(Cart, student=request.user)
@@ -194,14 +198,14 @@ class PaymentView(APIView):
 class EnrollListView(generics.ListAPIView):
     queryset = Enroll.objects.all()
     serializer_class = EnrollSerializer
-    permission_classes = []
+    permission_classes = [IsStudentOrReadOnly]
 
 
 #-----------------------------------------------------------------------------------------------
 
 class ReviewListCreateView(generics.ListCreateAPIView):
     serializer_class = ReviewSerializer
-    permission_classes = []
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         course = get_object_or_404(Course, pk=self.kwargs['pk'])
