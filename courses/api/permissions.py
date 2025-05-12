@@ -73,9 +73,26 @@ class IsStudentOrReadOnly(permissions.BasePermission):
 class IsReviewOwnerOrAdminOrReadOnly(permissions.BasePermission):
 
     def has_permission(self, request, view):
-        pass
+        if request.method in permissions.SAFE_METHODS:
+            return request.user and request.user.is_authenticated
     
 
     def has_object_permission(self, request, view, obj):
-        pass
+        if obj.student.is_student == request.user.is_student or request.user.is_superuser:
+            return True
+        
+        return False
+
+
+class IsLikeOwnerOrReadOnly(permissions.BasePermission):
+
+    def has_permission(self, request, view):
+        if request.method in permissions.SAFE_METHODS:
+            return request.user and request.user.is_authenticated
     
+
+    def has_object_permission(self, request, view, obj):
+        if obj.student == request.user:
+            return True
+        
+        return False

@@ -11,7 +11,7 @@ from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 
 
-from courses.api.permissions import IsAdminOrReadOnly, IsAdminOrTeacherOrReadOnly, IsStudentOrReadOnly
+from courses.api.permissions import IsAdminOrReadOnly, IsAdminOrTeacherOrReadOnly, IsStudentOrReadOnly, IsReviewOwnerOrAdminOrReadOnly, IsLikeOwnerOrReadOnly
 
 
 from courses.api.serializers import (
@@ -229,21 +229,31 @@ class ReviewListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         course = get_object_or_404(Course, pk=self.kwargs['pk'])
+        review = Review.objects.filter(course=course, student=self.request.user)
+
+        if review.exists():
+            raise Response({"message":"You can post only one comment!!"}, status=status.HTTP_400_BAD_REQUEST)
+
         serializer.save(student=self.request.user, course=course)
 
 
 
-class ReviewGetDeleteView(generics.RetrieveDestroyAPIView):
-    queryset = Review.objects.all()
+class ReviewGetDeleteView(generics.RetrieveUpdateDestroyAPIView):
+    # queryset = Review.objects.all()
     serializer_class = ReviewSerializer
-    permission_classes = []
+    permission_classes = [IsReviewOwnerOrAdminOrReadOnly]
     
+
+    def get_object(self):
+        course = get_object_or_404(Course, pk=self.kwargs['pk'])
+        review = get_object_or_404(Review, pk=self.kwargs['review_id'], course=course, student=self.request.user)
+        return review
 
 #-----------------------------------------------------------------------------------------------
 
 class LikeListCreateView(generics.ListCreateAPIView):
     serializer_class = LikeSerializer
-    permission_classes = []
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         review = get_object_or_404(Review, pk=self.kwargs['pk'])
@@ -252,12 +262,17 @@ class LikeListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         review = get_object_or_404(Review, pk=self.kwargs['pk'])
+        likes = ReviewLike.objects.filter(review=review, student=self.request.user)
+
+        if likes.exists():
+            raise Response({"message":"You cant like this comment again!1"}, status=status.HTTP_400_BAD_REQUEST)
+
         serializer.save(student=self.request.user, review=review)
 
 
 class LikeGetDeleteView(generics.RetrieveDestroyAPIView):
     serializer_class = LikeSerializer
-    permission_classes = []
+    permission_classes = [IsLikeOwnerOrReadOnly]
 
     def get_object(self):
         review = get_object_or_404(Review, pk=self.kwargs['pk'])
