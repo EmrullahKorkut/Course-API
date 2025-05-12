@@ -11,7 +11,7 @@ from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 
 
-from courses.api.permissions import IsAdminOrReadOnly, IsAdminOrTeacherOrReadOnly, IsStudentOrReadOnly, IsCardOwner
+from courses.api.permissions import IsAdminOrReadOnly, IsAdminOrTeacherOrReadOnly, IsStudentOrReadOnly
 
 
 from courses.api.serializers import (
@@ -93,7 +93,7 @@ class LessonListCreateView(generics.ListCreateAPIView):
     def get_queryset(self):
         course_id = self.kwargs['pk']
         course = get_object_or_404(Course, pk=course_id)
-        return Lesson.objects.filter(course=course)
+        return Lesson.objects.filter(course=course)                                   #ADMİN VE HOCALARIN YARATABİLDİĞİ STUDENTLARIN SADECE OKUYABİLDİĞİ COURSELARIN LESSONLARI
     
 
 class LessonDetailView(generics.RetrieveAPIView):                           
@@ -109,13 +109,24 @@ class LessonDetailView(generics.RetrieveAPIView):
 #-----------------------------------------------------------------------------------------------
 
 class CartAddDeleteView(APIView):
-    permission_classes = [IsCardOwner]
+    permission_classes = [IsStudentOrReadOnly]
+
+    def get(self, request, pk):
+        courses = get_object_or_404(Course, pk=pk)
+
+        if Enroll.objects.filter(student=request.user, courses=courses).exists():
+            return Response({"error":"You already have this cpurse so you cant add to buy this course!!!!!"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = CourseSerializer(courses)
+
+        return Response({"THE COURSE":serializer.data}, status=status.HTTP_200_OK)
+
 
     def post(self, request, pk):
         course = get_object_or_404(Course, pk=pk)
         # cart, created = Cart.objects.get_or_create(student=request.user)
 
-        cart, created = Cart.objects.get_or_create(student=request.user)
+        cart, created = Cart.objects.get_or_create(student=request.user)  #cartı bul yoksa oluştur devam et(eğer öğrencinn kartı yoksa diye böyle yaptık)
 
         if course in cart.courses.all():
             return Response({"message": "You cant add the same course!!.."}, status=status.HTTP_200_OK)
@@ -140,10 +151,10 @@ class CartAddDeleteView(APIView):
 
 class CartDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = CartSerializer
-    permission_classes = [IsCardOwner]
+    permission_classes = [IsStudentOrReadOnly]
 
     def get_object(self):
-        username = self.request.user
+        username = self.request.user                                        #cart detail.. sonrasında paye geçilip ödeme sonrası enroll olur
         try:
             cart = Cart.objects.get(student=username)
         except Cart.DoesNotExist:
@@ -159,9 +170,10 @@ class CartDetailView(generics.RetrieveDestroyAPIView):
 #-----------------------------------------------------------------------------------------------
 
 class PaymentView(APIView):
-    permission_classes = [IsCardOwner]
+    permission_classes = [IsStudentOrReadOnly]
 
     def get(self, request):
+
         cart = get_object_or_404(Cart, student=request.user)
         if not cart.courses.exists():
             return Response({"error":"Please add course to your card!!!"}, status=status.HTTP_400_BAD_REQUEST)
@@ -196,10 +208,13 @@ class PaymentView(APIView):
 #-----------------------------------------------------------------------------------------------
 
 class EnrollListView(generics.ListAPIView):
-    queryset = Enroll.objects.all()
+    # queryset = Enroll.objects.all()
     serializer_class = EnrollSerializer
     permission_classes = [IsStudentOrReadOnly]
 
+    def get_queryset(self):
+        courses = Enroll.objects.filter(student=self.request.user)
+        return courses
 
 #-----------------------------------------------------------------------------------------------
 
@@ -215,6 +230,7 @@ class ReviewListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         course = get_object_or_404(Course, pk=self.kwargs['pk'])
         serializer.save(student=self.request.user, course=course)
+
 
 
 class ReviewGetDeleteView(generics.RetrieveDestroyAPIView):

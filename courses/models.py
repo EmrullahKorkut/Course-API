@@ -116,11 +116,11 @@ class Enroll(models.Model):
 
     enroll_date = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        unique_together = ('student', 'courses')
+    # class Meta:
+    #     unique_together = ('student', 'courses')
 
     def __str__(self):
-        return f'{self.student.username} - {self.course.title}'
+        return f'{self.student.username} - {self.courses.title}'
 
 
 
