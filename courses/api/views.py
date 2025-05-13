@@ -11,7 +11,14 @@ from rest_framework.decorators import action
 from django.shortcuts import get_object_or_404
 
 
-from courses.api.permissions import IsAdminOrReadOnly, IsAdminOrTeacherOrReadOnly, IsStudentOrReadOnly, IsReviewOwnerOrAdminOrReadOnly, IsLikeOwnerOrReadOnly
+from courses.api.permissions import (
+    IsAdminOrReadOnly, 
+    IsAdminOrTeacherOrReadOnly, 
+    IsStudentOrReadOnly, 
+    IsReviewOwnerOrAdminOrReadOnly,
+    IsLikeOwnerOrReadOnly,
+    IsFavOwnerOrReadOnly,
+    )
 
 
 from courses.api.serializers import (
@@ -49,7 +56,7 @@ class RegisterView(generics.CreateAPIView):  #yazdığımız user modeline kayı
     permission_classes = [permissions.AllowAny]  
 
 #---------------------------------------------------deneme için listeleme views, crud işlemlerine geçilecek routerlar, urller ayarlanacak---------------------------
-#--------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 class UserListView(mixins.ListModelMixin, generics.GenericAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -65,7 +72,7 @@ class UserDetailView(mixins.RetrieveModelMixin, generics.GenericAPIView):
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
-#-----------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 class CategoryViewset(viewsets.ModelViewSet):
     queryset = Category.objects.all()                                   #CATEGORY VİEW. NOT SAFE METODLAR SADECE ADMİN İÇİNDİR. LİST RETRİEVE AUTH USERS İÇİN
@@ -73,7 +80,7 @@ class CategoryViewset(viewsets.ModelViewSet):
     permission_classes = [IsAdminOrReadOnly]
 
 
-#------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 class CourseViewset(viewsets.ModelViewSet):
     queryset = Course.objects.all()                                     #ADMİN TEACHER EDİTLER KALANLAR SADECE LİST EDER
@@ -83,7 +90,7 @@ class CourseViewset(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(teacher=self.request.user)
 
-#------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 class LessonListCreateView(generics.ListCreateAPIView):
@@ -106,7 +113,7 @@ class LessonDetailView(generics.RetrieveAPIView):
         return lesson
 
 
-#-----------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 class CartAddDeleteView(APIView):
     permission_classes = [IsStudentOrReadOnly]
@@ -122,7 +129,7 @@ class CartAddDeleteView(APIView):
         return Response({"THE COURSE":serializer.data}, status=status.HTTP_200_OK)
 
 
-    def post(self, request, pk):
+    def post(self, request, pk):                                                                                                #Carta ekleme çıkarma.... get couse almak için ve içinde sepette var mı kontrol ettik
         course = get_object_or_404(Course, pk=pk)
         # cart, created = Cart.objects.get_or_create(student=request.user)
 
@@ -163,11 +170,7 @@ class CartDetailView(generics.RetrieveDestroyAPIView):
         return cart
     
 
-#-----------------------------------------------------------------------------------------------
-
-
-
-#-----------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 class PaymentView(APIView):
     permission_classes = [IsStudentOrReadOnly]
@@ -187,7 +190,7 @@ class PaymentView(APIView):
     def post(self, request):
         cart = get_object_or_404(Cart, student=request.user)
 
-        if not cart.courses.exists():
+        if not cart.courses.exists():                                                                                       #Cart oluştuktan sonra ödeme yapılır ve ödenen ourslar enroll a kaydedilir
             return Response({"error":"Please add course to your card!!!"}, status=status.HTTP_400_BAD_REQUEST)
         
         payment_fee = 0
@@ -210,7 +213,7 @@ class PaymentView(APIView):
 class EnrollListView(generics.ListAPIView):
     # queryset = Enroll.objects.all()
     serializer_class = EnrollSerializer
-    permission_classes = [IsStudentOrReadOnly]
+    permission_classes = [IsStudentOrReadOnly]                                              #paymentde courselar zaten kaydedilmişti burada sadece /my-course için list edilir
 
     def get_queryset(self):
         courses = Enroll.objects.filter(student=self.request.user)
@@ -234,8 +237,8 @@ class ReviewListCreateView(generics.ListCreateAPIView):
         if review.exists():
             raise Response({"message":"You can post only one comment!!"}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer.save(student=self.request.user, course=course)
-
+        serializer.save(student=self.request.user, course=course)                                                     #review işlemleri.. permission için revew owner olunmalı 
+                                                                                                                
 
 
 class ReviewGetDeleteView(generics.RetrieveUpdateDestroyAPIView):
@@ -257,7 +260,7 @@ class LikeListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         review = get_object_or_404(Review, pk=self.kwargs['pk'])
-        like = ReviewLike.objects.filter(review=review, student=self.request.user)
+        like = ReviewLike.objects.filter(review=review)
         return like
 
     def perform_create(self, serializer):
@@ -265,7 +268,7 @@ class LikeListCreateView(generics.ListCreateAPIView):
         likes = ReviewLike.objects.filter(review=review, student=self.request.user)
 
         if likes.exists():
-            raise Response({"message":"You cant like this comment again!1"}, status=status.HTTP_400_BAD_REQUEST)
+            raise Response({"message":"You cant like this comment again!1"}, status=status.HTTP_400_BAD_REQUEST)        #like işlemleri like silme için owner olunmalı likelar courselara bağlı 
 
         serializer.save(student=self.request.user, review=review)
 
@@ -283,7 +286,7 @@ class LikeGetDeleteView(generics.RetrieveDestroyAPIView):
 
 class FavouriteCreateView(generics.CreateAPIView):
     serializer_class = FavouriteSerializer
-    permission_classes = []
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def perform_create(self, serializer):
         course = get_object_or_404(Course, pk=self.kwargs['pk'])
@@ -293,9 +296,9 @@ class FavouriteCreateView(generics.CreateAPIView):
 
 class FavouriteGetDeleteView(generics.RetrieveDestroyAPIView):
     serializer_class = FavouriteSerializer
-    permission_classes = []
+    permission_classes = [IsFavOwnerOrReadOnly]
 
-    def get_object(self):
+    def get_object(self):                                                               #Course fav eklenir herkesin kendi fav course listi olur permission viewdan yeterli geliyor
         course = get_object_or_404(Course, pk=self.kwargs['pk'])
         fav = get_object_or_404(Favourite, course=course, student=self.request.user)
         return fav
@@ -304,9 +307,10 @@ class FavouriteGetDeleteView(generics.RetrieveDestroyAPIView):
 
 class FavouriteListView(generics.ListAPIView):
     serializer_class = FavouriteSerializer
-    permission_classes = []
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         favs =  Favourite.objects.filter(student=self.request.user)
         return favs
+    
 #-----------------------------------------------------------------------------------------------
